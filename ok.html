@@ -1,0 +1,666 @@
+
+html_content = '''<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🥬 Sabzi Price Tracker - Google Sheets Sync</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --primary: #667eea; --secondary: #764ba2; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --dark: #1e293b; }
+        body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); min-height: 100vh; padding: 15px; }
+        .container { max-width: 1500px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 25px; padding: 20px; }
+        .header h1 { font-size: 2.2rem; margin-bottom: 8px; text-shadow: 2px 2px 8px rgba(0,0,0,0.3); font-weight: 800; }
+        .header p { font-size: 1rem; opacity: 0.95; }
+        .date-badge { display: inline-block; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); padding: 8px 20px; border-radius: 25px; margin-top: 10px; font-size: 0.9rem; }
+        
+        .card { background: white; border-radius: 24px; padding: 25px; margin-bottom: 20px; box-shadow: 0 25px 80px rgba(0,0,0,0.15); animation: fadeInUp 0.6s ease; }
+        .card-title { font-size: 1.2rem; font-weight: 700; color: var(--dark); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .card-title .icon { font-size: 1.5rem; }
+        
+        .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .input-group { display: flex; flex-direction: column; }
+        .input-group label { font-size: 0.85rem; font-weight: 600; color: #64748b; margin-bottom: 6px; }
+        .input-group input { padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 14px; font-size: 1rem; transition: all 0.3s; font-family: 'Poppins', sans-serif; background: #f8fafc; }
+        .input-group input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1); }
+        
+        .btn { padding: 12px 24px; border: none; border-radius: 14px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.3s; font-family: 'Poppins', sans-serif; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4); }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 8px 14px; font-size: 0.8rem; }
+        .btn-danger:hover { transform: translateY(-2px); }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 10px; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+        
+        .markets-section { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+        .market-chip { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; padding: 10px 18px; border-radius: 25px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 10px; animation: popIn 0.4s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); }
+        .market-chip .remove-btn { background: rgba(255,255,255,0.25); border: none; color: white; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .market-chip .remove-btn:hover { background: rgba(255,255,255,0.5); transform: rotate(90deg); }
+        
+        .search-bar { position: relative; margin-bottom: 20px; }
+        .search-bar input { width: 100%; padding: 14px 20px 14px 50px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 1rem; font-family: 'Poppins', sans-serif; transition: all 0.3s; background: #f8fafc; }
+        .search-bar input:focus { outline: none; border-color: var(--primary); background: white; }
+        .search-bar::before { content: '🔍'; position: absolute; left: 18px; top: 50%; transform: translateY(-50%); font-size: 1.2rem; }
+        
+        .table-container { overflow-x: auto; border-radius: 20px; border: 1px solid #e2e8f0; background: white; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
+        thead { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; position: sticky; top: 0; z-index: 10; }
+        th { padding: 16px; text-align: center; font-weight: 700; white-space: nowrap; font-size: 0.85rem; letter-spacing: 0.5px; }
+        th:first-child { text-align: left; border-radius: 20px 0 0 0; }
+        th:last-child { border-radius: 0 20px 0 0; }
+        td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; text-align: center; vertical-align: middle; }
+        td:first-child { text-align: left; }
+        tbody tr { transition: all 0.3s; }
+        tbody tr:hover { background: #f8fafc; transform: scale(1.01); }
+        
+        .price-input { width: 90px; padding: 10px 12px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem; text-align: center; font-family: 'Poppins', sans-serif; font-weight: 600; transition: all 0.3s; }
+        .price-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
+        
+        .price-bar-container { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+        .price-bar { height: 100%; border-radius: 3px; transition: all 0.5s ease; }
+        .price-bar-cheap { background: linear-gradient(90deg, #10b981, #34d399); }
+        .price-bar-mid { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .price-bar-expensive { background: linear-gradient(90deg, #ef4444, #f87171); }
+        
+        .price-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; margin-top: 4px; }
+        .badge-cheapest { background: #d1fae5; color: #065f46; }
+        .badge-expensive { background: #fee2e2; color: #991b1b; }
+        
+        .item-info { display: flex; flex-direction: column; gap: 4px; }
+        .item-name { font-weight: 700; color: var(--dark); font-size: 0.95rem; }
+        .item-unit { font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
+        .item-best-market { font-size: 0.75rem; color: var(--success); font-weight: 600; margin-top: 2px; }
+        
+        .qty-input { width: 70px; padding: 8px 10px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.85rem; text-align: center; font-family: 'Poppins', sans-serif; font-weight: 600; }
+        .qty-input:focus { outline: none; border-color: var(--success); }
+        
+        .cheapest-cell { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%) !important; position: relative; }
+        .cheapest-cell::after { content: '👍'; position: absolute; top: 2px; right: 2px; font-size: 0.7rem; }
+        .expensive-cell { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%) !important; }
+        .missing-price { background: #fef3c7 !important; }
+        
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .summary-card { background: white; border-radius: 24px; padding: 25px; box-shadow: 0 15px 50px rgba(0,0,0,0.08); position: relative; overflow: hidden; transition: all 0.4s; border: 2px solid transparent; }
+        .summary-card:hover { transform: translateY(-8px); box-shadow: 0 25px 70px rgba(0,0,0,0.12); }
+        .summary-card.best { border-color: var(--success); background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%); }
+        .summary-card.best::before { content: '⭐ SABSE SASTA'; position: absolute; top: 0; right: 0; background: var(--success); color: white; padding: 6px 35px; font-size: 0.7rem; font-weight: 800; transform: translate(15px, 10px) rotate(45deg); box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3); }
+        
+        .market-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+        .market-icon { width: 50px; height: 50px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); }
+        .market-icon.best-icon { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .market-title { font-size: 1.1rem; font-weight: 700; color: var(--dark); }
+        .market-subtitle { font-size: 0.8rem; color: #94a3b8; }
+        .total-amount { font-size: 2.5rem; font-weight: 800; color: var(--primary); margin: 10px 0; }
+        .total-amount.best-amount { color: var(--success); }
+        .stats-row { display: flex; gap: 15px; margin-top: 10px; }
+        .stat { background: #f1f5f9; padding: 8px 14px; border-radius: 12px; font-size: 0.8rem; }
+        .stat-value { font-weight: 700; color: var(--dark); }
+        .savings-tag { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46; padding: 8px 16px; border-radius: 25px; font-size: 0.85rem; font-weight: 700; margin-top: 12px; }
+        .extra-tag { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #991b1b; padding: 8px 16px; border-radius: 25px; font-size: 0.85rem; font-weight: 700; margin-top: 12px; }
+        
+        .shopping-list { background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%); border-radius: 20px; padding: 20px; margin-top: 20px; }
+        .shop-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: white; border-radius: 14px; margin-bottom: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: all 0.3s; }
+        .shop-item:hover { transform: translateX(5px); box-shadow: 0 5px 20px rgba(0,0,0,0.08); }
+        .shop-item-info { display: flex; align-items: center; gap: 12px; }
+        .shop-item-emoji { font-size: 1.5rem; }
+        .shop-item-name { font-weight: 600; color: var(--dark); }
+        .shop-item-qty { font-size: 0.8rem; color: #94a3b8; }
+        .shop-item-market { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); color: white; padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .shop-item-price { font-weight: 700; color: var(--success); font-size: 1.1rem; }
+        
+        .alert-box { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 16px; padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: #92400e; font-weight: 600; }
+        .alert-box.hidden { display: none; }
+        
+        .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
+        .empty-state .emoji { font-size: 5rem; margin-bottom: 20px; animation: bounce 2s infinite; }
+        .empty-state h3 { font-size: 1.4rem; margin-bottom: 10px; color: #64748b; }
+        .empty-state p { font-size: 1rem; max-width: 400px; margin: 0 auto; line-height: 1.6; }
+        
+        .quick-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: white; border-radius: 20px; padding: 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); transition: all 0.3s; }
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-icon { width: 50px; height: 50px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .stat-icon.blue { background: #dbeafe; }
+        .stat-icon.green { background: #d1fae5; }
+        .stat-icon.orange { background: #ffedd5; }
+        .stat-icon.purple { background: #f3e8ff; }
+        .stat-details h4 { font-size: 0.8rem; color: #94a3b8; font-weight: 600; }
+        .stat-details p { font-size: 1.3rem; font-weight: 800; color: var(--dark); }
+        
+        .sync-status { display: inline-flex; align-items: center; gap: 8px; background: #ecfdf5; color: #065f46; padding: 8px 16px; border-radius: 25px; font-size: 0.85rem; font-weight: 600; margin-left: 15px; }
+        .sync-status.syncing { background: #fef3c7; color: #92400e; }
+        .sync-status.error { background: #fee2e2; color: #991b1b; }
+        .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: pulse 2s infinite; }
+        .sync-status.syncing .sync-dot { background: #f59e0b; }
+        .sync-status.error .sync-dot { background: #ef4444; animation: none; }
+        
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 70% { transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .toast { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 28px; border-radius: 16px; font-weight: 700; box-shadow: 0 15px 40px rgba(0,0,0,0.3); animation: slideIn 0.4s ease; z-index: 1000; font-size: 0.95rem; }
+        .toast.error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        
+        @media (max-width: 768px) { 
+            .header h1 { font-size: 1.6rem; } 
+            .input-grid { grid-template-columns: 1fr; } 
+            .summary-grid { grid-template-columns: 1fr; } 
+            .quick-stats { grid-template-columns: repeat(2, 1fr); } 
+            th, td { padding: 10px 8px; font-size: 0.8rem; } 
+            .price-input { width: 70px; padding: 8px 6px; } 
+            .qty-input { width: 55px; padding: 6px 4px; } 
+            .total-amount { font-size: 1.8rem; } 
+        }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🥬 Sabzi Price Tracker Pro</h1>
+            <p>Smart Price Comparison - Google Sheets Sync Enabled!</p>
+            <div class="date-badge" id="currentDate"></div>
+            <div class="sync-status" id="syncStatus">
+                <span class="sync-dot"></span>
+                <span id="syncText">Ready to sync</span>
+            </div>
+        </div>
+
+        <div class="quick-stats" id="quickStats"></div>
+
+        <div class="card">
+            <div class="card-title"><span class="icon">🏪</span> Apne Markets Add Karein</div>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label>Market ka Naam</label>
+                    <input type="text" id="marketName" placeholder="e.g., Sabzi Mandi, Big Bazaar...">
+                </div>
+            </div>
+            <button class="btn btn-primary" id="addMarketBtn" onclick="addMarket()">
+                <span>➕</span> Market Add Karein
+            </button>
+            <div class="markets-section" id="marketsList"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title"><span class="icon">🛒</span> Sabzi Add Karein</div>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label>Sabzi ka Naam</label>
+                    <input type="text" id="itemName" placeholder="e.g., Aloo, Tamatar, Pyaaz...">
+                </div>
+                <div class="input-group">
+                    <label>Unit (kg/pc/bundle)</label>
+                    <input type="text" id="itemUnit" placeholder="kg" value="kg">
+                </div>
+            </div>
+            <button class="btn btn-success" id="addItemBtn" onclick="addItem()">
+                <span>➕</span> Sabzi Add Karein
+            </button>
+        </div>
+
+        <div class="alert-box hidden" id="missingAlert">
+            <span>⚠️</span>
+            <span id="alertText">Kuch prices missing hain! Sab markets ke prices fill karein taaki accurate comparison ho sake.</span>
+        </div>
+
+        <div class="card" id="priceTableCard" style="display: none;">
+            <div class="card-title"><span class="icon">📊</span> Price Comparison Table</div>
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Sabzi search karein..." onkeyup="filterTable()">
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr id="tableHeader">
+                            <th style="text-align:left">Sabzi (Qty)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" id="summaryCard" style="display: none;">
+            <div class="card-title"><span class="icon">💰</span> Market-wise Total Comparison</div>
+            <div class="summary-grid" id="summaryCards"></div>
+        </div>
+
+        <div class="card" id="shoppingListCard" style="display: none;">
+            <div class="card-title"><span class="icon">📝</span> Smart Shopping List - Kaunsi Sabzi Kahan Se Leni Hai</div>
+            <div class="shopping-list" id="shoppingList"></div>
+        </div>
+
+        <div class="card" id="emptyState">
+            <div class="empty-state">
+                <div class="emoji">🥕🍅🧅</div>
+                <h3>Abhi koi data nahi hai</h3>
+                <p>Upar se markets aur sabziyan add karein, phir unke prices compare karein! Har market ka alag price daalne par sabse sasta automatic highlight ho jayega.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // YOUR GOOGLE APPS SCRIPT URL
+        // ============================================
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxyrsEk_656rQXmDfluXME6JSeX2_DfA-Tipz4C4m3fS_8orCxoZh7caEQDmeMkY6sC/exec';
+
+        let markets = [];
+        let items = [];
+        let prices = {};
+        let quantities = {};
+
+        const vegEmojis = {
+            'aloo': '🥔', 'potato': '🥔', 'tamatar': '🍅', 'tomato': '🍅',
+            'pyaaz': '🧅', 'onion': '🧅', 'lahsun': '🧄', 'garlic': '🧄',
+            'adrak': '🫚', 'ginger': '🫚', 'gobhi': '🥦', 'cauliflower': '🥦',
+            'bhindi': '🥬', 'okra': '🥬', 'karela': '🥒', 'bitter gourd': '🥒',
+            'baingan': '🍆', 'brinjal': '🍆', 'eggplant': '🍆', 'shimla mirch': '🫑',
+            'capsicum': '🫑', 'bell pepper': '🫑', 'mirch': '🌶️', 'chilli': '🌶️',
+            'kheera': '🥒', 'cucumber': '🥒', 'lauki': '🍈', 'bottle gourd': '🍈',
+            'tinda': '🥬', 'tori': '🥬', 'parwal': '🥬', 'palak': '🍃',
+            'spinach': '🍃', 'methi': '🌿', 'fenugreek': '🌿', 'sarson': '🌿',
+            'mustard greens': '🌿', 'mooli': '🥕', 'radish': '🥕', 'gajar': '🥕',
+            'carrot': '🥕', 'beetroot': '🍠', 'shalgam': '🍠', 'matar': '🟢',
+            'peas': '🟢', 'corn': '🌽', 'makka': '🌽', 'sweet corn': '🌽',
+            'pumpkin': '🎃', 'kaddu': '🎃', 'bathua': '🍃', 'arbi': '🍠',
+            'yam': '🍠', 'suran': '🍠', 'elephant foot': '🍠', 'raw banana': '🍌',
+            'kachcha kela': '🍌', 'plantain': '🍌', 'drumstick': '🌿', 'moringa': '🌿',
+            'seim': '🥬', 'beans': '🫘', 'lobia': '🫘', 'black eyed peas': '🫘',
+            'rajma': '🫘', 'kidney beans': '🫘', 'chana': '🟡', 'chickpeas': '🟡',
+            'moong': '🟢', 'mung beans': '🟢', 'masoor': '🟠', 'lentils': '🟠',
+            'toor': '🟡', 'arhar': '🟡', 'pigeon peas': '🟡', 'urad': '⚫',
+            'black gram': '⚫', 'soyabean': '🟡', 'soybean': '🟡'
+        };
+
+        function getEmoji(name) {
+            const lower = name.toLowerCase();
+            for (let key in vegEmojis) { if (lower.includes(key)) return vegEmojis[key]; }
+            return '🥬';
+        }
+
+        // ============================================
+        // SYNC STATUS
+        // ============================================
+        function setSyncStatus(status, text) {
+            const el = document.getElementById('syncStatus');
+            const txt = document.getElementById('syncText');
+            el.className = 'sync-status ' + status;
+            txt.textContent = text;
+        }
+
+        // ============================================
+        // API CALLS
+        // ============================================
+        async function apiCall(action, data) {
+            setSyncStatus('syncing', 'Syncing with Google Sheets...');
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action, ...data })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    setSyncStatus('', 'Synced! ✅');
+                    setTimeout(() => setSyncStatus('', 'Ready to sync'), 2000);
+                } else {
+                    setSyncStatus('error', 'Sync failed! ❌');
+                }
+                return result;
+            } catch (err) {
+                setSyncStatus('error', 'Connection error! ❌');
+                console.error('API Error:', err);
+                return { success: false, error: err.message };
+            }
+        }
+
+        async function fetchData() {
+            setSyncStatus('syncing', 'Loading data...');
+            try {
+                const response = await fetch(SCRIPT_URL + '?action=getAll');
+                const result = await response.json();
+                if (result.success) {
+                    markets = result.markets || [];
+                    items = result.items || [];
+                    prices = result.prices || {};
+                    items.forEach(item => { quantities[item.name] = item.quantity || 1; });
+                    setSyncStatus('', 'Data loaded! ✅');
+                    setTimeout(() => setSyncStatus('', 'Ready to sync'), 2000);
+                    renderAll();
+                }
+            } catch (err) {
+                setSyncStatus('error', 'Failed to load! ❌');
+                console.error('Fetch Error:', err);
+            }
+        }
+
+        // ============================================
+        // INIT
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDate();
+            fetchData();
+        });
+
+        function updateDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDate').textContent = '📅 ' + now.toLocaleDateString('hi-IN', options);
+        }
+
+        function showToast(message, isError) {
+            const toast = document.createElement('div');
+            toast.className = 'toast' + (isError ? ' error' : '');
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function renderAll() {
+            renderQuickStats();
+            renderMarkets();
+            renderTable();
+            updateSummary();
+            updateShoppingList();
+            checkMissingPrices();
+        }
+
+        // ============================================
+        // QUICK STATS
+        // ============================================
+        function renderQuickStats() {
+            const container = document.getElementById('quickStats');
+            if (items.length === 0 && markets.length === 0) { container.innerHTML = ''; return; }
+            const totalItems = items.length;
+            const totalMarkets = markets.length;
+            const pricedItems = Object.keys(prices).filter(k => prices[k] > 0).length;
+            const totalPossible = items.length * markets.length;
+            const completionRate = totalPossible > 0 ? Math.round((pricedItems / totalPossible) * 100) : 0;
+            let bestMarket = '-', bestTotal = Infinity;
+            markets.forEach(m => {
+                let t = 0;
+                items.forEach(item => { const p = prices[`${item.name}_${m}`]; if (p && p > 0) t += p * (quantities[item.name] || 1); });
+                if (t > 0 && t < bestTotal) { bestTotal = t; bestMarket = m; }
+            });
+            container.innerHTML = `
+                <div class="stat-card"><div class="stat-icon blue">🥬</div><div class="stat-details"><h4>Total Sabziyan</h4><p>${totalItems}</p></div></div>
+                <div class="stat-card"><div class="stat-icon orange">🏪</div><div class="stat-details"><h4>Total Markets</h4><p>${totalMarkets}</p></div></div>
+                <div class="stat-card"><div class="stat-icon purple">📊</div><div class="stat-details"><h4>Data Complete</h4><p>${completionRate}%</p></div></div>
+                <div class="stat-card"><div class="stat-icon green">🏆</div><div class="stat-details"><h4>Best Market</h4><p style="font-size:1rem">${bestMarket}</p></div></div>`;
+        }
+
+        // ============================================
+        // MARKETS
+        // ============================================
+        async function addMarket() {
+            const btn = document.getElementById('addMarketBtn');
+            btn.disabled = true;
+            const name = document.getElementById('marketName').value.trim();
+            if (!name) { showToast('❌ Market ka naam daalein!', true); btn.disabled = false; return; }
+            if (markets.includes(name)) { showToast('❌ Ye market pehle se hai!', true); btn.disabled = false; return; }
+            
+            const result = await apiCall('addMarket', { marketName: name });
+            if (result.success) {
+                markets.push(name);
+                document.getElementById('marketName').value = '';
+                renderAll();
+                showToast('✅ Market add ho gaya!');
+            }
+            btn.disabled = false;
+        }
+
+        async function removeMarket(index) {
+            const market = markets[index];
+            const result = await apiCall('removeMarket', { marketName: market });
+            if (result.success) {
+                markets.splice(index, 1);
+                Object.keys(prices).forEach(key => { if (key.includes(`_${market}_`) || key.endsWith(`_${market}`)) delete prices[key]; });
+                renderAll();
+                showToast('🗑️ Market delete ho gaya!');
+            }
+        }
+
+        function renderMarkets() {
+            const container = document.getElementById('marketsList');
+            container.innerHTML = markets.map((market, i) => `
+                <div class="market-chip">${market}<button class="remove-btn" onclick="removeMarket(${i})">×</button></div>`).join('');
+        }
+
+        // ============================================
+        // ITEMS
+        // ============================================
+        async function addItem() {
+            const btn = document.getElementById('addItemBtn');
+            btn.disabled = true;
+            const name = document.getElementById('itemName').value.trim();
+            const unit = document.getElementById('itemUnit').value.trim() || 'kg';
+            if (!name) { showToast('❌ Sabzi ka naam daalein!', true); btn.disabled = false; return; }
+            const exists = items.some(item => item.name.toLowerCase() === name.toLowerCase());
+            if (exists) { showToast('❌ Ye sabzi pehle se hai!', true); btn.disabled = false; return; }
+            
+            const result = await apiCall('addItem', { itemName: name, unit: unit, quantity: 1 });
+            if (result.success) {
+                items.push({ name, unit, quantity: 1 });
+                quantities[name] = 1;
+                document.getElementById('itemName').value = '';
+                document.getElementById('itemUnit').value = 'kg';
+                renderAll();
+                showToast('✅ Sabzi add ho gayi!');
+            }
+            btn.disabled = false;
+        }
+
+        async function removeItem(index) {
+            const item = items[index];
+            const result = await apiCall('removeItem', { itemName: item.name });
+            if (result.success) {
+                items.splice(index, 1);
+                delete quantities[item.name];
+                Object.keys(prices).forEach(key => { if (key.startsWith(`${item.name}_`)) delete prices[key]; });
+                renderAll();
+                showToast('🗑️ Sabzi delete ho gayi!');
+            }
+        }
+
+        // ============================================
+        // PRICES & QUANTITIES
+        // ============================================
+        async function updatePrice(itemName, market, value) {
+            const price = parseFloat(value) || 0;
+            prices[`${itemName}_${market}`] = price;
+            const result = await apiCall('updatePrice', { itemName, marketName: market, price });
+            if (result.success) {
+                renderAll();
+            }
+        }
+
+        async function updateQuantity(itemName, value) {
+            const qty = parseFloat(value) || 1;
+            quantities[itemName] = qty;
+            const result = await apiCall('updateQuantity', { itemName, quantity: qty });
+            if (result.success) {
+                renderAll();
+            }
+        }
+
+        function getPrice(itemName, market) { return prices[`${itemName}_${market}`] || ''; }
+        function getQuantity(itemName) { return quantities[itemName] || 1; }
+
+        function getMinPrice(item) {
+            let min = Infinity, minMarket = '';
+            markets.forEach(m => { const p = prices[`${item.name}_${m}`]; if (p && p > 0 && p < min) { min = p; minMarket = m; } });
+            return { price: min === Infinity ? null : min, market: minMarket };
+        }
+
+        function getMaxPrice(item) {
+            let max = 0;
+            markets.forEach(m => { const p = prices[`${item.name}_${m}`]; if (p && p > 0 && p > max) max = p; });
+            return max === 0 ? null : max;
+        }
+
+        function getItemTotal(item, market) {
+            const price = prices[`${item.name}_${market}`];
+            const qty = quantities[item.name] || 1;
+            return price && price > 0 ? price * qty : 0;
+        }
+
+        // ============================================
+        // TABLE
+        // ============================================
+        function filterTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            document.querySelectorAll('#tableBody tr').forEach(row => {
+                const name = row.querySelector('.item-name')?.textContent.toLowerCase() || '';
+                row.style.display = name.includes(query) ? '' : 'none';
+            });
+        }
+
+        function checkMissingPrices() {
+            const alertBox = document.getElementById('missingAlert');
+            let missingCount = 0;
+            items.forEach(item => { markets.forEach(m => { if (!prices[`${item.name}_${m}`] || prices[`${item.name}_${m}`] <= 0) missingCount++; }); });
+            if (missingCount > 0 && items.length > 0 && markets.length > 0) {
+                alertBox.classList.remove('hidden');
+                document.getElementById('alertText').textContent = `${missingCount} prices abhi missing hain! Sab markets ke prices fill karein taaki accurate comparison ho sake.`;
+            } else { alertBox.classList.add('hidden'); }
+        }
+
+        function renderTable() {
+            const tableCard = document.getElementById('priceTableCard');
+            const emptyState = document.getElementById('emptyState');
+            if (items.length === 0 || markets.length === 0) { tableCard.style.display = 'none'; emptyState.style.display = 'block'; return; }
+            tableCard.style.display = 'block'; emptyState.style.display = 'none';
+            
+            const header = document.getElementById('tableHeader');
+            header.innerHTML = '<th style="text-align:left">Sabzi (Qty)</th>' + markets.map(m => `<th>${m}</th>`).join('') + '<th>Actions</th>';
+            
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = items.map((item, itemIndex) => {
+                const minData = getMinPrice(item);
+                const maxPrice = getMaxPrice(item);
+                const qty = getQuantity(item.name);
+                const emoji = getEmoji(item.name);
+                
+                const cells = markets.map(market => {
+                    const price = getPrice(item.name, market);
+                    const itemTotal = getItemTotal(item, market);
+                    const isCheapest = price && parseFloat(price) === minData.price && minData.price !== maxPrice && minData.price !== null;
+                    const isExpensive = price && parseFloat(price) === maxPrice && minData.price !== maxPrice && maxPrice !== null;
+                    const isMissing = !price || price === '';
+                    
+                    let barWidth = 0, barClass = 'price-bar-mid';
+                    if (price && maxPrice && maxPrice > 0) {
+                        barWidth = (parseFloat(price) / maxPrice) * 100;
+                        if (isCheapest) barClass = 'price-bar-cheap';
+                        else if (isExpensive) barClass = 'price-bar-expensive';
+                    }
+                    
+                    let cellClass = '';
+                    if (isCheapest) cellClass = 'cheapest-cell';
+                    else if (isExpensive) cellClass = 'expensive-cell';
+                    else if (isMissing) cellClass = 'missing-price';
+                    
+                    let badge = '';
+                    if (isCheapest) badge = '<div class="price-badge badge-cheapest">SABSE SASTA</div>';
+                    else if (isExpensive) badge = '<div class="price-badge badge-expensive">MEHNGA</div>';
+                    else if (isMissing) badge = '<div class="price-badge" style="background:#fef3c7;color:#92400e">MISSING</div>';
+                    
+                    return `<td class="${cellClass}">
+                        <input type="number" class="price-input" placeholder="₹" value="${price}" onchange="updatePrice('${item.name}', '${market}', this.value)">
+                        ${itemTotal > 0 ? `<div style="font-size:0.75rem;color:#64748b;margin-top:4px">Total: ₹${itemTotal.toFixed(0)}</div>` : ''}
+                        <div class="price-bar-container"><div class="price-bar ${barClass}" style="width: ${barWidth}%"></div></div>${badge}</td>`;
+                }).join('');
+                
+                return `<tr><td><div class="item-info"><span class="item-name">${emoji} ${item.name}</span><span class="item-unit">per ${item.unit}</span>${minData.market ? `<span class="item-best-market">✓ Best: ${minData.market} @ ₹${minData.price}</span>` : ''}</div><div style="margin-top:8px"><label style="font-size:0.75rem;color:#94a3b8">Qty:</label><input type="number" class="qty-input" value="${qty}" min="0.1" step="0.1" onchange="updateQuantity('${item.name}', this.value)"><span style="font-size:0.75rem;color:#94a3b8">${item.unit}</span></div></td>${cells}<td><button class="btn btn-danger btn-sm" onclick="removeItem(${itemIndex})">🗑️</button></td></tr>`;
+            }).join('');
+        }
+
+        // ============================================
+        // SUMMARY
+        // ============================================
+        function updateSummary() {
+            const summaryCard = document.getElementById('summaryCard');
+            if (items.length === 0 || markets.length === 0) { summaryCard.style.display = 'none'; return; }
+            summaryCard.style.display = 'block';
+            
+            const totals = markets.map(market => {
+                let total = 0, count = 0, itemCount = 0;
+                items.forEach(item => { const price = prices[`${item.name}_${market}`]; const qty = quantities[item.name] || 1; if (price && price > 0) { total += price * qty; count++; } itemCount++; });
+                return { market, total, count, itemCount };
+            });
+            
+            const validTotals = totals.filter(t => t.count > 0);
+            if (validTotals.length === 0) { summaryCard.style.display = 'none'; return; }
+            
+            const minTotal = Math.min(...validTotals.map(t => t.total));
+            const maxTotal = Math.max(...validTotals.map(t => t.total));
+            
+            const container = document.getElementById('summaryCards');
+            container.innerHTML = totals.map(t => {
+                const isBest = t.total === minTotal && t.total > 0;
+                const isWorst = t.total === maxTotal && t.total > 0 && maxTotal !== minTotal;
+                const savings = maxTotal - t.total;
+                const savingsPercent = maxTotal > 0 ? Math.round((savings / maxTotal) * 100) : 0;
+                
+                return `<div class="summary-card ${isBest ? 'best' : ''} ${isWorst ? 'worst' : ''}"><div class="market-header"><div class="market-icon ${isBest ? 'best-icon' : ''}">${isBest ? '🏆' : '🏪'}</div><div><div class="market-title">${t.market}</div><div class="market-subtitle">${t.count}/${t.itemCount} items priced</div></div></div><div class="total-amount ${isBest ? 'best-amount' : ''}">₹${t.total.toFixed(0)}</div><div class="stats-row"><div class="stat"><span class="stat-value">${t.count}</span> items</div><div class="stat"><span class="stat-value">₹${t.count > 0 ? (t.total/t.count).toFixed(0) : 0}</span> avg</div></div>${isBest && savings > 0 ? `<div class="savings-tag">💰 ₹${savings.toFixed(0)} bachat (${savingsPercent}%)</div>` : ''}${!isBest && savings > 0 ? `<div class="extra-tag">📈 ₹${savings.toFixed(0)} zyada</div>` : ''}${t.count < t.itemCount ? `<div style="color:#f59e0b;font-size:0.8rem;margin-top:8px;font-weight:600">⚠️ ${t.itemCount - t.count} prices missing</div>` : ''}</div>`;
+            }).join('');
+        }
+
+        // ============================================
+        // SHOPPING LIST
+        // ============================================
+        function updateShoppingList() {
+            const card = document.getElementById('shoppingListCard');
+            const container = document.getElementById('shoppingList');
+            if (items.length === 0 || markets.length === 0) { card.style.display = 'none'; return; }
+            
+            const list = [];
+            items.forEach(item => {
+                let bestPrice = Infinity, bestMarket = '', hasPrice = false;
+                markets.forEach(m => { const p = prices[`${item.name}_${m}`]; if (p && p > 0) { hasPrice = true; if (p < bestPrice) { bestPrice = p; bestMarket = m; } } });
+                if (hasPrice) { const qty = quantities[item.name] || 1; list.push({ name: item.name, unit: item.unit, qty: qty, market: bestMarket, price: bestPrice, total: bestPrice * qty, emoji: getEmoji(item.name) }); }
+            });
+            
+            if (list.length === 0) { card.style.display = 'none'; return; }
+            card.style.display = 'block';
+            
+            const byMarket = {};
+            list.forEach(item => { if (!byMarket[item.market]) byMarket[item.market] = []; byMarket[item.market].push(item); });
+            
+            let html = '', grandTotal = 0;
+            for (let market in byMarket) {
+                html += `<h3 style="margin-top:15px;margin-bottom:10px;color:#667eea;font-size:1rem">🏪 ${market}</h3>`;
+                byMarket[market].forEach(item => { grandTotal += item.total; html += `<div class="shop-item"><div class="shop-item-info"><span class="shop-item-emoji">${item.emoji}</span><div><div class="shop-item-name">${item.name}</div><div class="shop-item-qty">${item.qty} ${item.unit} × ₹${item.price}</div></div></div><div style="text-align:right"><div class="shop-item-price">₹${item.total.toFixed(0)}</div><div class="shop-item-market">${item.market}</div></div></div>`; });
+            }
+            html += `<div style="margin-top:20px;padding:15px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:16px;color:white;text-align:center"><div style="font-size:0.9rem;opacity:0.9">💰 Total Savings Shopping</div><div style="font-size:2rem;font-weight:800">₹${grandTotal.toFixed(0)}</div><div style="font-size:0.85rem;opacity:0.9;margin-top:5px">Sabse saste market se shopping karke!</div></div>`;
+            container.innerHTML = html;
+        }
+
+        // ============================================
+        // KEYBOARD SHORTCUTS
+        // ============================================
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { if (document.activeElement.id === 'marketName') addMarket(); else if (document.activeElement.id === 'itemName' || document.activeElement.id === 'itemUnit') addItem(); }
+        });
+    </script>
+</body>
+</html>'''
+
+# Save the file
+with open('/mnt/agents/output/sabzi_tracker_google_sheets.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("✅ File saved successfully!")
+print(f"📄 Total lines: {len(html_content.splitlines())}")
+print(f"📊 File size: {len(html_content)} characters")
