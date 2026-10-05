@@ -115,24 +115,11 @@
     color: var(--ink-soft);
     font-variant-numeric: tabular-nums;
   }
-  .quick-btns { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-  .quick-btns button {
-    font-size: 13px;
-    padding: 6px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--paper-line);
-    background: var(--green-soft);
-    color: var(--green);
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .quick-btns button:hover { filter: brightness(0.96); }
 
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   thead th {
     text-align: left;
     font-size: 12px;
-    text-transform: none;
     color: var(--ink-soft);
     font-weight: 600;
     border-bottom: 1.5px solid var(--ink);
@@ -171,11 +158,43 @@
     color: var(--ink-soft);
     margin-top: 10px;
   }
-  .save-status {
-    font-size: 12px;
-    color: var(--green);
-    margin-top: 10px;
-    min-height: 16px;
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .btn-wa {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #25D366;
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    padding: 11px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+  .btn-wa:active { transform: scale(0.98); }
+  .btn-sheet {
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    padding: 11px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .save-status { font-size: 12.5px; color: var(--green); margin-top: 10px; min-height: 16px; }
+  .btn-clear {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1.5px solid var(--paper-line);
+    border-radius: 24px;
+    padding: 11px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
   }
 </style>
 </head>
@@ -184,7 +203,7 @@
   <header>
     <div class="kicker">मोमोज़ ठेला हिसाब-किताब</div>
     <h1>कितना मोमोज़, कितना माल</h1>
-    <p>आज के वास्तविक इस्तेमाल के हिसाब से मात्रा निकालें। जो डेटा अभी नहीं है, बाद में भर सकते हैं।</p>
+    <p>आज के वास्तविक इस्तेमाल के हिसाब से मात्रा निकालें। रेट सेव रहते हैं।</p>
   </header>
 
   <div class="card">
@@ -205,7 +224,7 @@
 
   <div class="card">
     <h2>माल और रेट</h2>
-    <p class="hint">रेट ₹/किलो में डालें। जिन चीज़ों की मात्रा अभी पता नहीं है, उन्हें खाली छोड़ सकते हैं और बाद में भर सकते हैं।</p>
+    <p class="hint">रेट ₹/किलो में डालें। रेट अपने-आप सेव रहते हैं। जिस दिन रेट बदले, बस नया रेट डाल दें।</p>
     <div class="table-scroll">
       <table>
         <thead>
@@ -226,35 +245,27 @@
         </tfoot>
       </table>
     </div>
+
+    <div class="actions">
+      <button class="btn-wa" id="shareBtn" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.300.5 1.700.6.7.2 1.400.2 1.900.1.600-.1 1.700-.7 2-1.400.2-.7.2-1.300.2-1.400-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.600 15.100L2 22l5-1.300A10 10 0 1 0 12 2z"/></svg>
+        WhatsApp पर शेयर करें
+      </button>
+      <button class="btn-sheet" id="sheetBtn" type="button">📊 शीट में सेव करें</button>
+      <button class="btn-clear" id="clearBtn" type="button">रेट साफ़ करें</button>
+    </div>
     <p class="save-status" id="saveStatus"></p>
+
     <p class="foot-note">नोट: पनीर का तैयार mixture 1.331 kg था; आज 71 paneer momos में उसमें से 710 g consume हुआ और 621 g बचा। यह mixture weight अलग reference है; paneer की actual quantity 1 kg दर्ज है।</p>
     <p class="foot-note">जिन ingredients की quantity अभी नहीं दी गई है, उन्हें 0 रखा गया है। बाद में quantity भरने पर calculation में शामिल किया जा सकता है।</p>
   </div>
 </div>
 <script>
-  /*
-   * REAL DATA PROVIDED BY USER
-   * Base production: 71 paneer + 120 veg = 191 momos.
-   *
-   * Values are stored separately for paneer and veg wherever the user
-   * supplied a batch-specific quantity. Missing values remain blank/0.
-   */
-
   const BASE_PANEER = 71;
   const BASE_VEG = 120;
 
   const ITEMS = [
-    // =========================
-    // ACTUAL DATA: 71 PANEER MOMOS
-    // =========================
-    // Paneer used: 1000 g (entire 1 kg)
-    // Prepared paneer-momo mixture: 1331 g
-    // Consumed for 71 momos: 710 g
     { key:"paneer",      name:"पनीर",                paneerGrams:1000, vegGrams:0 },
-
-    // =========================
-    // ACTUAL DATA: 120 VEG MOMOS
-    // =========================
     { key:"gobhi",       name:"पत्ता गोभी",            paneerGrams:0,    vegGrams:1500 },
     { key:"piyaj",       name:"प्याज",                  paneerGrams:750,  vegGrams:0 },
     { key:"gajar",       name:"गाजर",                  paneerGrams:0, vegGrams:0 },
@@ -264,8 +275,6 @@
     { key:"adraklahsun", name:"अदरक-लहसुन पेस्ट",      paneerGrams:0, vegGrams:200 },
     { key:"dalda",       name:"डालडा",                 paneerGrams:0, vegGrams:110 },
     { key:"soya",        name:"सोयाबीन",               paneerGrams:0, vegGrams:55 },
-
-    // Missing quantities are intentionally left at 0.
     { key:"dhaniya",     name:"धनिया",                 paneerGrams:0, vegGrams:0 },
     { key:"harimirch",   name:"हरी मिर्च",              paneerGrams:0, vegGrams:0 },
     { key:"tamatar",     name:"टमाटर",                  paneerGrams:0, vegGrams:0 },
@@ -280,20 +289,26 @@
     { key:"lpg",         name:"एलपीजी गैस",             paneerGrams:0, vegGrams:0 }
   ];
 
-  // Reference information for the paneer mixture.
-  const PANEER_MIXTURE_PREPARED_G = 1331;
-  const PANEER_MIXTURE_CONSUMED_G = 710;
+  // यहाँ अपने Google Apps Script Web App का URL चिपकाएँ (code.gs देखें)।
+  // खाली रहने पर रेट सिर्फ़ इसी फोन/ब्राउज़र में सेव होंगे।
+  const SHEET_URL = "";
 
-  const STORAGE_KEY = "momos_material_rates_v2";
+  const STORAGE_KEY = "momos_material_rates_v3";
   const loadLocal = () => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }
     catch(e) { return {}; }
   };
-  const saveLocal = rates => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(rates)); } catch(e) {}
+  const saveLocal = r => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(r)); } catch(e) {}
   };
-
   let rates = loadLocal();
+
+  function setStatus(msg, ms) {
+    const el = document.getElementById("saveStatus");
+    el.textContent = msg;
+    clearTimeout(window._st);
+    if (ms) window._st = setTimeout(() => { el.textContent = ""; }, ms);
+  }
 
   function formatQty(g) {
     if (!g) return "—";
@@ -308,6 +323,29 @@
     return "₹" + Math.round(v).toLocaleString("en-IN");
   }
 
+  function getCounts() {
+    let p = parseInt(document.getElementById("paneerCount").value, 10);
+    let v = parseInt(document.getElementById("vegCount").value, 10);
+    if (isNaN(p) || p < 0) p = 0;
+    if (isNaN(v) || v < 0) v = 0;
+    return { paneerCount: p, vegCount: v };
+  }
+
+  function compute() {
+    const { paneerCount, vegCount } = getCounts();
+    let grandTotal = 0;
+    const rows = ITEMS.map(item => {
+      const paneerQty = item.paneerGrams * (paneerCount / BASE_PANEER);
+      const vegQty = item.vegGrams * (vegCount / BASE_VEG);
+      const totalGrams = paneerQty + vegQty;
+      const rate = parseFloat(rates[item.key]) || 0;
+      const cost = (totalGrams / 1000) * rate;
+      grandTotal += cost;
+      return { item, paneerQty, vegQty, totalGrams, rate, cost };
+    });
+    return { paneerCount, vegCount, rows, grandTotal };
+  }
+
   function buildRows() {
     const tbody = document.getElementById("itemsBody");
     tbody.innerHTML = "";
@@ -320,7 +358,7 @@
         <td class="num" data-veg="${item.key}">—</td>
         <td class="num">
           <input type="number" class="rate-input" data-rate="${item.key}"
-                 min="0" step="0.01" value="${rates[item.key] || ""}" placeholder="0">
+                 min="0" step="0.01" value="${rates[item.key] || ""}" placeholder="0" inputmode="decimal">
         </td>
         <td class="num" data-cost="${item.key}">₹0</td>
       `;
@@ -332,52 +370,109 @@
         const key = input.dataset.rate;
         rates[key] = input.value === "" ? 0 : parseFloat(input.value);
         saveLocal(rates);
-        document.getElementById("saveStatus").textContent =
-          "रेट इस फोन पर सेव हो गया";
-        clearTimeout(window._saveTimer);
-        window._saveTimer = setTimeout(() => {
-          document.getElementById("saveStatus").textContent = "";
-        }, 1600);
         recalc();
       });
     });
   }
 
   function recalc() {
-    let paneerCount = parseInt(document.getElementById("paneerCount").value,10);
-    let vegCount = parseInt(document.getElementById("vegCount").value,10);
-    if (isNaN(paneerCount) || paneerCount < 0) paneerCount = 0;
-    if (isNaN(vegCount) || vegCount < 0) vegCount = 0;
+    const { paneerCount, vegCount, rows, grandTotal } = compute();
 
     document.getElementById("splitInfo").textContent =
       `कुल ${paneerCount + vegCount} मोमोज़`;
 
-    let grandTotal = 0;
-
-    ITEMS.forEach(item => {
-      const paneerQty = item.paneerGrams * (paneerCount / BASE_PANEER);
-      const vegQty = item.vegGrams * (vegCount / BASE_VEG);
-
-      document.querySelector(`[data-paneer="${item.key}"]`).textContent = formatQty(paneerQty);
-      document.querySelector(`[data-veg="${item.key}"]`).textContent = formatQty(vegQty);
-
-      const totalGrams = paneerQty + vegQty;
-      const rate = parseFloat(rates[item.key]) || 0;
-      const cost = (totalGrams / 1000) * rate;
-      grandTotal += cost;
-
-      document.querySelector(`[data-cost="${item.key}"]`).textContent =
-        formatMoney(cost);
+    rows.forEach(r => {
+      const k = r.item.key;
+      document.querySelector(`[data-paneer="${k}"]`).textContent = formatQty(r.paneerQty);
+      document.querySelector(`[data-veg="${k}"]`).textContent = formatQty(r.vegQty);
+      document.querySelector(`[data-cost="${k}"]`).textContent = formatMoney(r.cost);
     });
 
     document.getElementById("grandTotal").textContent = formatMoney(grandTotal);
   }
+
+  function buildShareText() {
+    const { paneerCount, vegCount, rows, grandTotal } = compute();
+    const date = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+
+    let t = `*मोमोज़ हिसाब — ${date}*\n`;
+    t += `पनीर मोमोज़: ${paneerCount}\n`;
+    t += `वेज मोमोज़: ${vegCount}\n`;
+    t += `कुल मोमोज़: ${paneerCount + vegCount}\n\n`;
+
+    const used = rows.filter(r => r.totalGrams > 0 || r.cost > 0);
+    used.forEach(r => {
+      t += `• ${r.item.name}: ${formatQty(r.totalGrams)}`;
+      if (r.rate > 0) t += ` × ₹${r.rate}/किग्रा = ${formatMoney(r.cost)}`;
+      t += `\n`;
+    });
+
+    t += `\n*कुल खर्च: ${formatMoney(grandTotal)}*`;
+    return t;
+  }
+
+  document.getElementById("shareBtn").addEventListener("click", () => {
+    const url = "https://wa.me/?text=" + encodeURIComponent(buildShareText());
+    window.open(url, "_blank");
+  });
+
+  document.getElementById("clearBtn").addEventListener("click", () => {
+    if (!confirm("सारे सेव किए हुए रेट हट जाएँगे। पक्का?")) return;
+    rates = {};
+    saveLocal(rates);
+    document.querySelectorAll("[data-rate]").forEach(i => { i.value = ""; });
+    recalc();
+  });
+
+  async function saveToSheet() {
+    if (!SHEET_URL) { setStatus("पहले कोड में SHEET_URL डालें (code.gs देखें)", 4000); return; }
+    const { paneerCount, vegCount, rows, grandTotal } = compute();
+    const payload = {
+      date: new Date().toLocaleDateString("en-IN"),
+      paneerCount, vegCount, grandTotal: Math.round(grandTotal),
+      rows: rows.map(r => ({
+        key: r.item.key, name: r.item.name,
+        qtyGrams: Math.round(r.totalGrams), rate: r.rate, cost: Math.round(r.cost)
+      }))
+    };
+    setStatus("शीट में भेज रहे हैं…");
+    try {
+      await fetch(SHEET_URL, {
+        method: "POST", mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+      setStatus("✓ शीट में सेव हो गया", 3000);
+    } catch (e) {
+      setStatus("शीट में नहीं गया, इंटरनेट देखें", 4000);
+    }
+  }
+
+  async function loadRatesFromSheet() {
+    if (!SHEET_URL) return;
+    try {
+      const res = await fetch(SHEET_URL);
+      const data = await res.json();
+      if (data && data.rates) {
+        rates = Object.assign({}, rates, data.rates);
+        saveLocal(rates);
+        document.querySelectorAll("[data-rate]").forEach(i => {
+          const v = rates[i.dataset.rate];
+          i.value = v ? v : "";
+        });
+        recalc();
+      }
+    } catch (e) { /* offline: local रेट ही चलेंगे */ }
+  }
+
+  document.getElementById("sheetBtn").addEventListener("click", saveToSheet);
 
   document.getElementById("paneerCount").addEventListener("input", recalc);
   document.getElementById("vegCount").addEventListener("input", recalc);
 
   buildRows();
   recalc();
+  loadRatesFromSheet();
 </script>
 
 </body>
