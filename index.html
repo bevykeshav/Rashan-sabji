@@ -77,6 +77,32 @@
   }
   header p { margin: 0; color: var(--ink-soft); font-size: 14px; }
 
+  /* ---------- टैब ---------- */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .tab-btn {
+    flex: 1;
+    background: var(--card);
+    color: var(--ink-soft);
+    border: 1.5px solid var(--paper-line);
+    border-radius: 10px;
+    padding: 12px 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .tab-btn.active {
+    background: var(--green);
+    color: #fff;
+    border-color: var(--green);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
   .card {
     background: var(--card);
     border: 1px solid var(--paper-line);
@@ -129,6 +155,7 @@
   tbody tr:last-child td { border-bottom: none; }
   .item-name { font-weight: 600; }
   .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  thead th.num { text-align: right; }
   .rate-input {
     width: 78px;
     padding: 5px 6px;
@@ -150,6 +177,13 @@
     font-size: 16px;
   }
   .total-row .num { color: var(--clay); }
+  .sub-row td {
+    border-bottom: none;
+    padding-top: 6px;
+    font-size: 14px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
 
   .table-scroll { overflow-x: auto; }
 
@@ -186,6 +220,37 @@
     cursor: pointer;
   }
   .save-status { font-size: 12.5px; color: var(--green); margin-top: 10px; min-height: 16px; }
+  .add-box {
+    margin-top: 18px;
+    padding: 14px;
+    border: 1.5px dashed var(--paper-line);
+    border-radius: 10px;
+    background: var(--paper);
+  }
+  .add-box h3 { margin: 0 0 4px; font-size: 15px; }
+  .add-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .add-row input {
+    padding: 8px 10px;
+    border: 1.5px solid var(--paper-line);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--ink);
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .add-row input[type="text"] { flex: 2 1 150px; min-width: 0; }
+  .add-row input[type="number"] { flex: 1 1 90px; min-width: 0; width: 90px; }
+  .add-row input:focus { outline: 2px solid var(--turmeric); outline-offset: 1px; }
+  .add-row .btn-sheet { padding: 9px 18px; }
+  .btn-del {
+    background: transparent;
+    border: none;
+    color: var(--clay);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0 4px;
+    margin-left: 4px;
+  }
   .btn-clear {
     background: transparent;
     color: var(--ink-soft);
@@ -206,63 +271,145 @@
     <p>आज के वास्तविक इस्तेमाल के हिसाब से मात्रा निकालें। रेट सेव रहते हैं।</p>
   </header>
 
-  <div class="card">
-    <h2>आज कितने मोमोज़ बने?</h2>
-    <div class="batch-row">
-      <label for="paneerCount">पनीर मोमोज़</label>
-      <input type="number" id="paneerCount" value="71" min="0" step="1">
-    </div>
-    <div class="batch-row" style="margin-top:10px;">
-      <label for="vegCount">वेज मोमोज़</label>
-      <input type="number" id="vegCount" value="120" min="0" step="1">
-    </div>
-    <div class="batch-row" style="margin-top:10px;">
-      <span class="split" id="splitInfo"></span>
-    </div>
-    <p class="foot-note">बेस डेटा आज के 71 पनीर + 120 वेज = 191 मोमोज़ के वास्तविक इस्तेमाल पर है।</p>
+  <div class="tabs">
+    <button type="button" class="tab-btn active" id="tabBtnMomos" data-tab="momos">🥟 मोमोज़</button>
+    <button type="button" class="tab-btn" id="tabBtnChutney" data-tab="chutney">🌶️ चटनी</button>
   </div>
 
-  <div class="card">
-    <h2>माल और रेट</h2>
-    <p class="hint">रेट ₹/किलो में डालें। रेट अपने-आप सेव रहते हैं। जिस दिन रेट बदले, बस नया रेट डाल दें।</p>
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>आइटम</th>
-            <th class="num">पनीर मात्रा</th>
-            <th class="num">वेज मात्रा</th>
-            <th class="num">रेट ₹/किलो</th>
-            <th class="num">कुल कीमत ₹</th>
-          </tr>
-        </thead>
-        <tbody id="itemsBody"></tbody>
-        <tfoot>
-          <tr class="total-row">
-            <td colspan="4">कुल खर्च</td>
-            <td class="num" id="grandTotal">₹0</td>
-          </tr>
-        </tfoot>
-      </table>
+  <!-- ================= मोमोज़ टैब ================= -->
+  <div class="tab-panel active" id="tab-momos">
+    <div class="card">
+      <h2>आज कितने मोमोज़ बने?</h2>
+      <div class="batch-row">
+        <label for="paneerCount">पनीर मोमोज़</label>
+        <input type="number" id="paneerCount" value="71" min="0" step="1">
+      </div>
+      <div class="batch-row" style="margin-top:10px;">
+        <label for="vegCount">वेज मोमोज़</label>
+        <input type="number" id="vegCount" value="120" min="0" step="1">
+      </div>
+      <div class="batch-row" style="margin-top:10px;">
+        <span class="split" id="splitInfo"></span>
+      </div>
+      <p class="foot-note">बेस डेटा आज के 71 पनीर + 120 वेज = 191 मोमोज़ के वास्तविक इस्तेमाल पर है।</p>
     </div>
 
-    <div class="actions">
-      <button class="btn-wa" id="shareBtn" type="button">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.300.5 1.700.6.7.2 1.400.2 1.900.1.600-.1 1.700-.7 2-1.400.2-.7.2-1.300.2-1.400-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.600 15.100L2 22l5-1.300A10 10 0 1 0 12 2z"/></svg>
-        WhatsApp पर शेयर करें
-      </button>
-      <button class="btn-sheet" id="sheetBtn" type="button">📊 शीट में सेव करें</button>
-      <button class="btn-clear" id="clearBtn" type="button">रेट साफ़ करें</button>
-    </div>
-    <p class="save-status" id="saveStatus"></p>
+    <div class="card">
+      <h2>माल और रेट</h2>
+      <p class="hint">रेट ₹/किलो में डालें। रेट अपने-आप सेव रहते हैं। जिस दिन रेट बदले, बस नया रेट डाल दें।</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>आइटम</th>
+              <th class="num">पनीर मात्रा</th>
+              <th class="num">वेज मात्रा</th>
+              <th class="num">रेट ₹/किलो</th>
+              <th class="num">कुल कीमत ₹</th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody"></tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="4">कुल खर्च</td>
+              <td class="num" id="grandTotal">₹0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
 
-    <p class="foot-note">नोट: पनीर का तैयार mixture 1.331 kg था; आज 71 paneer momos में उसमें से 710 g consume हुआ और 621 g बचा। यह mixture weight अलग reference है; paneer की actual quantity 1 kg दर्ज है।</p>
-    <p class="foot-note">जिन ingredients की quantity अभी नहीं दी गई है, उन्हें 0 रखा गया है। बाद में quantity भरने पर calculation में शामिल किया जा सकता है।</p>
+      <div class="actions">
+        <button class="btn-wa" id="shareBtn" type="button">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.300.5 1.700.6.7.2 1.400.2 1.900.1.600-.1 1.700-.7 2-1.400.2-.7.2-1.300.2-1.400-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.600 15.100L2 22l5-1.300A10 10 0 1 0 12 2z"/></svg>
+          WhatsApp पर शेयर करें
+        </button>
+        <button class="btn-sheet" id="sheetBtn" type="button">📊 शीट में सेव करें</button>
+        <button class="btn-clear" id="clearBtn" type="button">रेट साफ़ करें</button>
+      </div>
+      <p class="save-status" id="saveStatus"></p>
+
+      <p class="foot-note">नोट: पनीर का तैयार mixture 1.331 kg था; आज 71 paneer momos में उसमें से 710 g consume हुआ और 621 g बचा। यह mixture weight अलग reference है; paneer की actual quantity 1 kg दर्ज है।</p>
+      <p class="foot-note">जिन ingredients की quantity अभी नहीं दी गई है, उन्हें 0 रखा गया है। बाद में quantity भरने पर calculation में शामिल किया जा सकता है।</p>
+    </div>
+  </div>
+
+  <!-- ================= चटनी टैब ================= -->
+  <div class="tab-panel" id="tab-chutney">
+    <div class="card">
+      <h2>कितनी चटनी बनानी है?</h2>
+      <div class="batch-row">
+        <label for="chutneyGrams">चटनी (ग्राम)</label>
+        <input type="number" id="chutneyGrams" value="1200" min="0" step="50">
+      </div>
+      <div class="batch-row" style="margin-top:10px;">
+        <span class="split" id="chutneySplit"></span>
+      </div>
+      <p class="foot-note">बेस डेटा: 1 किलो 200 ग्राम चटनी = 410 ग्राम टमाटर + 503 ग्राम हरी मिर्च + 200 ग्राम अदरक + 100 ग्राम लाल मिर्च + 100 ग्राम हरा धनिया + 400 ग्राम गैस (आज के बैच की)।</p>
+    </div>
+
+    <div class="card">
+      <h2>चटनी का माल और खर्च</h2>
+      <p class="hint">रेट ₹/किलो में डालें। टमाटर, हरी मिर्च, लाल मिर्च, धनिया और गैस का रेट मोमोज़ टैब से साझा है, यहाँ बदलोगे तो वहाँ भी बदलेगा।</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>आइटम</th>
+              <th class="num">1200 ग्राम चटनी में</th>
+              <th class="num">इतनी चटनी में</th>
+              <th class="num">रेट ₹/किलो</th>
+              <th class="num">कुल कीमत ₹</th>
+            </tr>
+          </thead>
+          <tbody id="chutneyBody"></tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="4">चटनी का कुल खर्च</td>
+              <td class="num" id="chutneyTotal">₹0</td>
+            </tr>
+            <tr class="sub-row">
+              <td colspan="4">प्रति किलो चटनी का खर्च</td>
+              <td class="num" id="chutneyPerKg">₹0</td>
+            </tr>
+            <tr class="sub-row">
+              <td colspan="4">प्रति 100 ग्राम चटनी का खर्च</td>
+              <td class="num" id="chutneyPer100">₹0</td>
+            </tr>
+            <tr class="sub-row">
+              <td colspan="4">प्रति 1 ग्राम चटनी का खर्च</td>
+              <td class="num" id="chutneyPer1">₹0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="add-box">
+        <h3>➕ नया आइटम जोड़ें</h3>
+        <p class="hint" style="margin-bottom:10px;">ग्राम वो डालें जो 1200 ग्राम चटनी में लगता है। चटनी कम-ज़्यादा करने पर ये अपने-आप बदलेगा।</p>
+        <div class="add-row">
+          <input type="text" id="newName" placeholder="आइटम का नाम (जैसे नमक)">
+          <input type="number" id="newGrams" placeholder="ग्राम" min="0" step="any" inputmode="decimal">
+          <input type="number" id="newRate" placeholder="रेट ₹/किलो" min="0" step="0.01" inputmode="decimal">
+          <button type="button" class="btn-sheet" id="addItemBtn">जोड़ें</button>
+        </div>
+        <p class="save-status" id="addMsg"></p>
+      </div>
+
+      <div class="actions">
+        <button class="btn-wa" id="chutneyShareBtn" type="button">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.300.5 1.700.6.7.2 1.400.2 1.900.1.600-.1 1.700-.7 2-1.400.2-.7.2-1.300.2-1.400-.1-.1-.3-.2-.6-.3zM12 2a10 10 0 0 0-8.600 15.100L2 22l5-1.300A10 10 0 1 0 12 2z"/></svg>
+          WhatsApp पर शेयर करें
+        </button>
+      </div>
+
+      <p class="foot-note">नोट: कच्चे माल (टमाटर, मिर्च, अदरक, धनिया) का जोड़ 1313 ग्राम है, जबकि चटनी 1200 ग्राम बनी। यानी पकने/पीसने में थोड़ा वज़न कम हुआ। गैस माल के वज़न में नहीं गिनी जाती, उसका सिर्फ़ खर्च जुड़ता है। खर्च कच्चे माल और गैस के वज़न पर निकलता है।</p>
+    </div>
   </div>
 </div>
 <script>
   const BASE_PANEER = 71;
   const BASE_VEG = 120;
+  const BASE_CHUTNEY = 1200; // ग्राम चटनी का बेस डेटा
 
   const ITEMS = [
     { key:"paneer",      name:"पनीर",                paneerGrams:1000, vegGrams:0 },
@@ -288,6 +435,35 @@
     { key:"lahsun",      name:"लहसुन",                  paneerGrams:0, vegGrams:0 },
     { key:"lpg",         name:"एलपीजी गैस",             paneerGrams:0, vegGrams:0 }
   ];
+
+  // चटनी का माल: 1200 ग्राम चटनी के लिए ग्राम में।
+  // key वही हैं जो ऊपर ITEMS में हैं, ताकि रेट दोनों टैब में साझा रहें (अदरक नया है)।
+  const CHUTNEY_ITEMS = [
+    { key:"tamatar",   name:"टमाटर",       grams:410 },
+    { key:"harimirch", name:"हरी मिर्च",    grams:503 },
+    { key:"adrak",     name:"अदरक",        grams:200 },
+    { key:"lalmirch",  name:"लाल मिर्च",    grams:100 },
+    { key:"dhaniya",   name:"हरा धनिया",    grams:100 },
+    { key:"lpg",       name:"एलपीजी गैस",   grams:400 }
+  ];
+
+  // यूज़र के जोड़े हुए अपने आइटम (फोन में सेव रहते हैं)
+  const CUSTOM_KEY = "momos_chutney_custom_v1";
+  let customItems = [];
+  try { customItems = JSON.parse(localStorage.getItem(CUSTOM_KEY) || "[]"); }
+  catch(e) { customItems = []; }
+  if (!Array.isArray(customItems)) customItems = [];
+  function saveCustom() {
+    try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(customItems)); } catch(e) {}
+  }
+  function getAllChutneyItems() {
+    return CHUTNEY_ITEMS.concat(customItems.map(c => ({
+      key: c.key, name: c.name, grams: c.grams, custom: true
+    })));
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[ch]));
+  }
 
   // Google Sheet से जुड़ा Apps Script Web App URL (स्थायी रूप से सेट)।
   const SHEET_URL = "https://script.google.com/macros/s/AKfycbwWDV2KVsYPENarhCMC_UsUCH-DEIYwD92DHDljo6KuJrOmfbUXR4oZi1R_F_rgs1Iebg/exec";
@@ -322,6 +498,30 @@
     return "₹" + Math.round(v).toLocaleString("en-IN");
   }
 
+  function formatMoney2(v) {
+    return "₹" + (Math.round(v * 100) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function formatMoney3(v) {
+    return "₹" + (Math.round(v * 1000) / 1000).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  }
+
+  // ---------- टैब बदलना ----------
+  const TAB_KEY = "momos_material_active_tab";
+  function showTab(name) {
+    document.querySelectorAll(".tab-panel").forEach(p => {
+      p.classList.toggle("active", p.id === "tab-" + name);
+    });
+    document.querySelectorAll(".tab-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.tab === name);
+    });
+    try { localStorage.setItem(TAB_KEY, name); } catch(e) {}
+  }
+  document.querySelectorAll(".tab-btn").forEach(b => {
+    b.addEventListener("click", () => showTab(b.dataset.tab));
+  });
+
+  // ---------- मोमोज़ ----------
   function getCounts() {
     let p = parseInt(document.getElementById("paneerCount").value, 10);
     let v = parseInt(document.getElementById("vegCount").value, 10);
@@ -345,6 +545,22 @@
     return { paneerCount, vegCount, rows, grandTotal };
   }
 
+  // एक ही key के सारे रेट इनपुट (दोनों टैब) एक जैसे रखना
+  function syncRateInputs(key, exceptEl) {
+    const v = rates[key];
+    document.querySelectorAll('[data-rate="' + key + '"], [data-crate="' + key + '"]').forEach(i => {
+      if (i !== exceptEl) i.value = v ? v : "";
+    });
+  }
+
+  function onRateInput(input, key) {
+    rates[key] = input.value === "" ? 0 : parseFloat(input.value);
+    saveLocal(rates);
+    syncRateInputs(key, input);
+    recalc();
+    recalcChutney();
+  }
+
   function buildRows() {
     const tbody = document.getElementById("itemsBody");
     tbody.innerHTML = "";
@@ -365,12 +581,7 @@
     });
 
     tbody.querySelectorAll("[data-rate]").forEach(input => {
-      input.addEventListener("input", () => {
-        const key = input.dataset.rate;
-        rates[key] = input.value === "" ? 0 : parseFloat(input.value);
-        saveLocal(rates);
-        recalc();
-      });
+      input.addEventListener("input", () => onRateInput(input, input.dataset.rate));
     });
   }
 
@@ -410,8 +621,149 @@
     return t;
   }
 
+  // ---------- चटनी ----------
+  function getChutneyGrams() {
+    let g = parseFloat(document.getElementById("chutneyGrams").value);
+    if (isNaN(g) || g < 0) g = 0;
+    return g;
+  }
+
+  function computeChutney() {
+    const chutneyGrams = getChutneyGrams();
+    const factor = chutneyGrams / BASE_CHUTNEY;
+    let total = 0;
+    const rows = getAllChutneyItems().map(item => {
+      const baseGrams = item.grams;
+      const needGrams = item.grams * factor;
+      const rate = parseFloat(rates[item.key]) || 0;
+      const cost = (needGrams / 1000) * rate;
+      total += cost;
+      return { item, baseGrams, needGrams, rate, cost };
+    });
+    return { chutneyGrams, rows, total };
+  }
+
+  function buildChutneyRows() {
+    const tbody = document.getElementById("chutneyBody");
+    tbody.innerHTML = "";
+
+    getAllChutneyItems().forEach(item => {
+      const tr = document.createElement("tr");
+      const delBtn = item.custom
+        ? ` <button type="button" class="btn-del" data-del="${item.key}" title="हटाएँ">✕</button>`
+        : "";
+      tr.innerHTML = `
+        <td class="item-name">${escapeHtml(item.name)}${delBtn}</td>
+        <td class="num">${formatQty(item.grams)}</td>
+        <td class="num" data-cneed="${item.key}">—</td>
+        <td class="num">
+          <input type="number" class="rate-input" data-crate="${item.key}"
+                 min="0" step="0.01" value="${rates[item.key] || ""}" placeholder="0" inputmode="decimal">
+        </td>
+        <td class="num" data-ccost="${item.key}">₹0</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll("[data-crate]").forEach(input => {
+      input.addEventListener("input", () => onRateInput(input, input.dataset.crate));
+    });
+
+    tbody.querySelectorAll("[data-del]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const key = btn.dataset.del;
+        const it = customItems.find(c => c.key === key);
+        if (!it) return;
+        if (!confirm(`"${it.name}" हटाना है?`)) return;
+        customItems = customItems.filter(c => c.key !== key);
+        saveCustom();
+        delete rates[key];
+        saveLocal(rates);
+        buildChutneyRows();
+        recalcChutney();
+      });
+    });
+  }
+
+  function addCustomItem() {
+    const nameEl = document.getElementById("newName");
+    const gramsEl = document.getElementById("newGrams");
+    const rateEl = document.getElementById("newRate");
+    const msg = document.getElementById("addMsg");
+
+    const name = nameEl.value.trim();
+    const grams = parseFloat(gramsEl.value);
+    const rate = parseFloat(rateEl.value);
+
+    if (!name) { msg.textContent = "आइटम का नाम लिखें"; return; }
+    if (isNaN(grams) || grams < 0) { msg.textContent = "ग्राम सही डालें"; return; }
+
+    const key = "c_" + Date.now();
+    customItems.push({ key, name, grams });
+    saveCustom();
+    if (!isNaN(rate) && rate > 0) {
+      rates[key] = rate;
+      saveLocal(rates);
+    }
+
+    nameEl.value = "";
+    gramsEl.value = "";
+    rateEl.value = "";
+    msg.textContent = "✓ आइटम जुड़ गया";
+    setTimeout(() => { msg.textContent = ""; }, 2500);
+
+    buildChutneyRows();
+    recalcChutney();
+  }
+
+  function recalcChutney() {
+    const { chutneyGrams, rows, total } = computeChutney();
+
+    document.getElementById("chutneySplit").textContent =
+      `कुल चटनी: ${formatQty(chutneyGrams)}`;
+
+    rows.forEach(r => {
+      const k = r.item.key;
+      document.querySelector(`[data-cneed="${k}"]`).textContent = formatQty(r.needGrams);
+      document.querySelector(`[data-ccost="${k}"]`).textContent = formatMoney2(r.cost);
+    });
+
+    document.getElementById("chutneyTotal").textContent = formatMoney2(total);
+    const perKg = chutneyGrams > 0 ? total / (chutneyGrams / 1000) : 0;
+    document.getElementById("chutneyPerKg").textContent = formatMoney2(perKg);
+    document.getElementById("chutneyPer100").textContent = formatMoney2(perKg / 10);
+    document.getElementById("chutneyPer1").textContent = formatMoney3(perKg / 1000);
+  }
+
+  function buildChutneyShareText() {
+    const { chutneyGrams, rows, total } = computeChutney();
+    const date = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+
+    let t = `*चटनी हिसाब — ${date}*\n`;
+    t += `चटनी: ${formatQty(chutneyGrams)}\n\n`;
+
+    rows.forEach(r => {
+      t += `• ${r.item.name}: ${formatQty(r.needGrams)}`;
+      if (r.rate > 0) t += ` × ₹${r.rate}/किग्रा = ${formatMoney2(r.cost)}`;
+      t += `\n`;
+    });
+
+    const perKg = chutneyGrams > 0 ? total / (chutneyGrams / 1000) : 0;
+    t += `\n*कुल खर्च: ${formatMoney2(total)}*`;
+    t += `\nप्रति किलो चटनी: ${formatMoney2(perKg)}`;
+    t += `\nप्रति 100 ग्राम चटनी: ${formatMoney2(perKg / 10)}`;
+    t += `\nप्रति 1 ग्राम चटनी: ${formatMoney3(perKg / 1000)}`;
+    return t;
+  }
+
+  // ---------- बटन और इवेंट ----------
   document.getElementById("shareBtn").addEventListener("click", () => {
     const url = "https://wa.me/?text=" + encodeURIComponent(buildShareText());
+    window.open(url, "_blank");
+  });
+
+  document.getElementById("chutneyShareBtn").addEventListener("click", () => {
+    const url = "https://wa.me/?text=" + encodeURIComponent(buildChutneyShareText());
     window.open(url, "_blank");
   });
 
@@ -419,8 +771,9 @@
     if (!confirm("सारे सेव किए हुए रेट हट जाएँगे। पक्का?")) return;
     rates = {};
     saveLocal(rates);
-    document.querySelectorAll("[data-rate]").forEach(i => { i.value = ""; });
+    document.querySelectorAll("[data-rate], [data-crate]").forEach(i => { i.value = ""; });
     recalc();
+    recalcChutney();
   });
 
   async function saveToSheet() {
@@ -459,7 +812,12 @@
           const v = rates[i.dataset.rate];
           i.value = v ? v : "";
         });
+        document.querySelectorAll("[data-crate]").forEach(i => {
+          const v = rates[i.dataset.crate];
+          i.value = v ? v : "";
+        });
         recalc();
+        recalcChutney();
       }
     } catch (e) { /* offline: local रेट ही चलेंगे */ }
   }
@@ -468,10 +826,25 @@
 
   document.getElementById("paneerCount").addEventListener("input", recalc);
   document.getElementById("vegCount").addEventListener("input", recalc);
+  document.getElementById("chutneyGrams").addEventListener("input", recalcChutney);
+  document.getElementById("addItemBtn").addEventListener("click", addCustomItem);
+  ["newName", "newGrams", "newRate"].forEach(id => {
+    document.getElementById(id).addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); addCustomItem(); }
+    });
+  });
 
   buildRows();
+  buildChutneyRows();
   recalc();
+  recalcChutney();
   loadRatesFromSheet();
+
+  // पिछली बार जो टैब खुला था वही खोलो
+  try {
+    const last = localStorage.getItem(TAB_KEY);
+    if (last === "chutney" || last === "momos") showTab(last);
+  } catch(e) {}
 </script>
 
 </body>
